@@ -44,7 +44,6 @@ int main() {
     // 3. Add sequence with specific alignment mode (Global or SemiGlobal)
     const char* seq3 = "CGT";
     // SemiGlobal allows free gaps at ends of query and graph
-    poasta_add_sequence_with_mode(graph, seq3, strlen(seq3), 4, 6, 2, PoastaAlignmentMode::SemiGlobal);
 
     // 4. Get Multiple Sequence Alignment (MSA)
     PoastaMsa msa = poasta_get_msa(graph);
@@ -79,15 +78,12 @@ int main() {
 - `PoastaMsa`: Struct containing the MSA result.
     - `sequences`: Array of C strings (`char**`).
     - `num_sequences`: Number of sequences.
-- `PoastaAlignmentMode`: Enum for alignment mode.
-    - `Global` (0): Standard global alignment.
-    - `SemiGlobal` (1): Free gaps at the start/end of both query and graph. **Note**: Currently not supported by the underlying `poasta` library (causes panic). Use `Global` for now.
 
 ### Functions
 
-- `poasta_create_graph()`: Creates a new empty graph.
+- `poasta_create_graph()`: Creates a new graph.
 - `poasta_free_graph(graph)`: Frees the graph.
-- `poasta_add_sequence(graph, seq, len, mismatch, open, extend)`: Adds a sequence using Global alignment.
+- `poasta_add_sequence(graph, seq, len, mismatch, gap_open, gap_extend)`: Adds a sequence (Global alignment).
 - `poasta_add_sequence_with_mode(...)`: Adds a sequence with a specific alignment mode.
 - `poasta_get_msa(graph)`: Generates the MSA. Caller must free result.
 - `poasta_free_msa(msa)`: Frees the MSA memory.

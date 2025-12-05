@@ -3,7 +3,6 @@ use std::io::{Cursor, BufRead};
 use std::os::raw::{c_char, c_int};
 use std::slice;
 use std::ptr;
-use std::ops::Bound;
 
 use poasta::graphs::poa::POAGraph;
 use poasta::aligner::scoring::{GapAffine, AlignmentType};
@@ -22,12 +21,6 @@ pub struct PoastaMsa {
     pub num_sequences: usize,
 }
 
-/// Alignment mode for adding sequences.
-#[repr(C)]
-pub enum PoastaAlignmentMode {
-    Global = 0,
-    SemiGlobal = 1,
-}
 
 /// Creates a new empty POAGraph.
 #[unsafe(no_mangle)]
@@ -56,22 +49,6 @@ pub unsafe extern "C" fn poasta_add_sequence(
     gap_open: u8,
     gap_extend: u8,
 ) -> c_int {
-    unsafe {
-        poasta_add_sequence_with_mode(graph, seq, len, mismatch_score, gap_open, gap_extend, PoastaAlignmentMode::Global)
-    }
-}
-
-/// Adds a sequence to the graph with specified alignment mode.
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn poasta_add_sequence_with_mode(
-    graph: *mut PoastaGraph,
-    seq: *const c_char,
-    len: usize,
-    mismatch_score: u8,
-    gap_open: u8,
-    gap_extend: u8,
-    mode: PoastaAlignmentMode,
-) -> c_int {
     if graph.is_null() || seq.is_null() {
         return -1;
     }
@@ -93,15 +70,8 @@ pub unsafe extern "C" fn poasta_add_sequence_with_mode(
         // Align and then add
         let scoring = GapAffine::new(mismatch_score, gap_extend, gap_open);
         
-        let aln_type = match mode {
-            PoastaAlignmentMode::Global => AlignmentType::Global,
-            PoastaAlignmentMode::SemiGlobal => AlignmentType::EndsFree {
-                qry_free_begin: Bound::Unbounded,
-                qry_free_end: Bound::Unbounded,
-                graph_free_begin: Bound::Unbounded,
-                graph_free_end: Bound::Unbounded,
-            },
-        };
+        // Always use Global alignment
+        let aln_type = AlignmentType::Global;
 
         let aligner = PoastaAligner::new(AffineMinGapCost(scoring), aln_type);
         

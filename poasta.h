@@ -4,12 +4,6 @@
 #include <ostream>
 #include <new>
 
-/// Alignment mode for adding sequences.
-enum class PoastaAlignmentMode {
-  Global = 0,
-  SemiGlobal = 1,
-};
-
 /// Opaque pointer to the POAGraph<u32>.
 struct PoastaGraph;
 
@@ -34,15 +28,6 @@ int poasta_add_sequence(PoastaGraph *graph,
                         uint8_t mismatch_score,
                         uint8_t gap_open,
                         uint8_t gap_extend);
-
-/// Adds a sequence to the graph with specified alignment mode.
-int poasta_add_sequence_with_mode(PoastaGraph *graph,
-                                  const char *seq,
-                                  uintptr_t len,
-                                  uint8_t mismatch_score,
-                                  uint8_t gap_open,
-                                  uint8_t gap_extend,
-                                  PoastaAlignmentMode mode);
 
 /// Generates the MSA from the graph.
 /// Returns a PoastaMsa struct. Caller must free it with poasta_free_msa.
