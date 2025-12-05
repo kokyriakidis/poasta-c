@@ -81,7 +81,7 @@ int main() {
     - `num_sequences`: Number of sequences.
 - `PoastaAlignmentMode`: Enum for alignment mode.
     - `Global` (0): Standard global alignment.
-    - `SemiGlobal` (1): Free gaps at the start/end of both query and graph.
+    - `SemiGlobal` (1): Free gaps at the start/end of both query and graph. **Note**: Currently not supported by the underlying `poasta` library (causes panic). Use `Global` for now.
 
 ### Functions
 
