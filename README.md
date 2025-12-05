@@ -2,6 +2,10 @@
 
 C/C++ bindings for the [poasta](https://github.com/broadinstitute/poasta) library (Partial Order Alignment).
 
+## Supported Features
+
+- **Global Alignment**: Currently, only global alignment is supported. Semi-global (ends-free) alignment is not implemented in the upstream `poasta` library.
+
 ## Building
 
 This crate is designed to be built as a static or dynamic library.
@@ -41,11 +45,7 @@ int main() {
     const char* seq2 = "ACGTTCGT";
     poasta_add_sequence(graph, seq2, strlen(seq2), 4, 6, 2);
 
-    // 3. Add sequence with specific alignment mode (Global or SemiGlobal)
-    const char* seq3 = "CGT";
-    // SemiGlobal allows free gaps at ends of query and graph
-
-    // 4. Get Multiple Sequence Alignment (MSA)
+    // 3. Get Multiple Sequence Alignment (MSA)
     PoastaMsa msa = poasta_get_msa(graph);
     
     std::cout << "MSA (" << msa.num_sequences << " sequences):" << std::endl;
@@ -56,14 +56,14 @@ int main() {
     // Free MSA memory
     poasta_free_msa(msa);
 
-    // 5. Get GFA output (optional)
+    // 4. Get GFA output (optional)
     char* gfa = poasta_get_gfa(graph);
     if (gfa) {
         std::cout << "\nGFA Output:\n" << gfa << std::endl;
         free(gfa); // Use standard free() for the string
     }
 
-    // 6. Free the graph
+    // 5. Free the graph
     poasta_free_graph(graph);
 
     return 0;
@@ -84,7 +84,6 @@ int main() {
 - `poasta_create_graph()`: Creates a new graph.
 - `poasta_free_graph(graph)`: Frees the graph.
 - `poasta_add_sequence(graph, seq, len, mismatch, gap_open, gap_extend)`: Adds a sequence (Global alignment).
-- `poasta_add_sequence_with_mode(...)`: Adds a sequence with a specific alignment mode.
 - `poasta_get_msa(graph)`: Generates the MSA. Caller must free result.
 - `poasta_free_msa(msa)`: Frees the MSA memory.
 - `poasta_get_gfa(graph)`: Returns GFA string. Caller must free result with `free()`.
