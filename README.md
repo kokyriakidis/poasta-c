@@ -45,6 +45,11 @@ int main() {
     const char* seq2 = "ACGTTCGT";
     poasta_add_sequence(graph, seq2, strlen(seq2), 4, 6, 2);
 
+    // Alternative: Add a sequence with a weight (useful for duplicate sequences)
+    // If you have 5 identical sequences, you can add once with weight=5 instead of 5 calls
+    const char* seq3 = "ACGTACGT";
+    poasta_add_sequence_with_weight(graph, seq3, strlen(seq3), 5, 4, 6, 2);
+
     // 3. Get Multiple Sequence Alignment (MSA)
     PoastaMsa msa = poasta_get_msa(graph);
     
@@ -83,7 +88,8 @@ int main() {
 
 - `poasta_create_graph()`: Creates a new graph.
 - `poasta_free_graph(graph)`: Frees the graph.
-- `poasta_add_sequence(graph, seq, len, mismatch, gap_open, gap_extend)`: Adds a sequence (Global alignment).
+- `poasta_add_sequence(graph, seq, len, mismatch, gap_open, gap_extend)`: Adds a sequence (Global alignment). Each base gets a default weight of 1.
+- `poasta_add_sequence_with_weight(graph, seq, len, weight, mismatch, gap_open, gap_extend)`: Adds a sequence with a specified weight for the entire sequence. This is useful when you have many identical sequences - instead of calling `poasta_add_sequence` multiple times, you can add the sequence once with a weight equal to the count of identical sequences. All bases in the sequence will have the same weight value.
 - `poasta_get_msa(graph)`: Generates the MSA. Caller must free result.
 - `poasta_free_msa(msa)`: Frees the MSA memory.
 - `poasta_get_gfa(graph)`: Returns GFA string. Caller must free result with `free()`.
