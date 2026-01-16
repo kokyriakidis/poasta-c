@@ -29,6 +29,18 @@ int poasta_add_sequence(PoastaGraph *graph,
                         uint8_t gap_open,
                         uint8_t gap_extend);
 
+/// Adds a sequence to the graph with a specified weight (Global alignment).
+/// The weight applies to the entire sequence, meaning all bases will have the same weight.
+/// This is useful when many identical sequences exist - instead of adding them multiple times,
+/// you can add once with a weight representing the count.
+int poasta_add_sequence_with_weight(PoastaGraph *graph,
+                                    const char *seq,
+                                    uintptr_t len,
+                                    uint32_t weight,
+                                    uint8_t mismatch_score,
+                                    uint8_t gap_open,
+                                    uint8_t gap_extend);
+
 /// Generates the MSA from the graph.
 /// Returns a PoastaMsa struct. Caller must free it with poasta_free_msa.
 PoastaMsa poasta_get_msa(PoastaGraph *graph);

@@ -84,6 +84,56 @@ pub unsafe extern "C" fn poasta_add_sequence(
     }
 }
 
+/// Adds a sequence to the graph with a specified weight (Global alignment).
+/// The weight applies to the entire sequence, meaning all bases will have the same weight.
+/// This is useful when many identical sequences exist - instead of adding them multiple times,
+/// you can add once with a weight representing the count.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn poasta_add_sequence_with_weight(
+    graph: *mut PoastaGraph,
+    seq: *const c_char,
+    len: usize,
+    weight: u32,
+    mismatch_score: u8,
+    gap_open: u8,
+    gap_extend: u8,
+) -> c_int {
+    if graph.is_null() || seq.is_null() {
+        return -1;
+    }
+
+    let graph_inner = unsafe { &mut (*graph).0 };
+    let seq_slice = unsafe { slice::from_raw_parts(seq as *const u8, len) };
+    
+    // Create a dummy name for the sequence (e.g. "seq_N")
+    let seq_name = format!("seq_{}", graph_inner.sequences.len());
+    // Use the provided weight for all bases in the sequence
+    let weights = vec![weight as usize; len];
+
+    if graph_inner.is_empty() {
+        // First sequence, just add it
+        match graph_inner.add_alignment_with_weights(&seq_name, seq_slice, None, &weights) {
+            Ok(_) => 0,
+            Err(_) => -2,
+        }
+    } else {
+        // Align and then add
+        let scoring = GapAffine::new(mismatch_score, gap_extend, gap_open);
+        
+        // Always use Global alignment
+        let aln_type = AlignmentType::Global;
+
+        let aligner = PoastaAligner::new(AffineMinGapCost(scoring), aln_type);
+        
+        let result = aligner.align::<u32, _>(graph_inner, seq_slice);
+        
+        match graph_inner.add_alignment_with_weights(&seq_name, seq_slice, Some(&result.alignment), &weights) {
+            Ok(_) => 0,
+            Err(_) => -3,
+        }
+    }
+}
+
 /// Generates the MSA from the graph.
 /// Returns a PoastaMsa struct. Caller must free it with poasta_free_msa.
 #[unsafe(no_mangle)]
