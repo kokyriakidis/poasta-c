@@ -5,8 +5,8 @@ use std::slice;
 use std::ptr;
 
 use poasta::graphs::poa::POAGraph;
-use poasta::aligner::scoring::{GapAffine, AlignmentType};
-use poasta::aligner::config::AffineMinGapCost;
+use poasta::aligner::scoring::{GapAffine, GapAffine2Piece, AlignmentType};
+use poasta::aligner::config::{AffineMinGapCost, Affine2PieceMinGapCost};
 use poasta::aligner::PoastaAligner;
 use poasta::io::fasta::poa_graph_to_fasta;
 use poasta::io::graph::graph_to_gfa;
@@ -46,8 +46,8 @@ pub unsafe extern "C" fn poasta_add_sequence(
     seq: *const c_char,
     len: usize,
     mismatch_score: u8,
-    gap_open: u8,
     gap_extend: u8,
+    gap_open: u8,
 ) -> c_int {
     if graph.is_null() || seq.is_null() {
         return -1;
@@ -95,8 +95,8 @@ pub unsafe extern "C" fn poasta_add_sequence_with_weight(
     len: usize,
     weight: u32,
     mismatch_score: u8,
-    gap_open: u8,
     gap_extend: u8,
+    gap_open: u8,
 ) -> c_int {
     if graph.is_null() || seq.is_null() {
         return -1;
@@ -124,6 +124,108 @@ pub unsafe extern "C" fn poasta_add_sequence_with_weight(
         let aln_type = AlignmentType::Global;
 
         let aligner = PoastaAligner::new(AffineMinGapCost(scoring), aln_type);
+        
+        let result = aligner.align::<u32, _>(graph_inner, seq_slice);
+        
+        match graph_inner.add_alignment_with_weights(&seq_name, seq_slice, Some(&result.alignment), &weights) {
+            Ok(_) => 0,
+            Err(_) => -3,
+        }
+    }
+}
+
+/// Adds a sequence to the graph using two-piece affine gap model (Global alignment).
+/// This uses two different gap penalty pairs, choosing the cheaper option for each gap.
+/// Useful for better modeling of short vs long gaps.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn poasta_add_sequence_2piece(
+    graph: *mut PoastaGraph,
+    seq: *const c_char,
+    len: usize,
+    mismatch_score: u8,
+    gap_extend1: u8,
+    gap_open1: u8,
+    gap_extend2: u8,
+    gap_open2: u8,
+) -> c_int {
+    if graph.is_null() || seq.is_null() {
+        return -1;
+    }
+
+    let graph_inner = unsafe { &mut (*graph).0 };
+    let seq_slice = unsafe { slice::from_raw_parts(seq as *const u8, len) };
+    
+    // Create a dummy name for the sequence (e.g. "seq_N")
+    let seq_name = format!("seq_{}", graph_inner.sequences.len());
+    let weights = vec![1; len];
+
+    if graph_inner.is_empty() {
+        // First sequence, just add it
+        match graph_inner.add_alignment_with_weights(&seq_name, seq_slice, None, &weights) {
+            Ok(_) => 0,
+            Err(_) => -2,
+        }
+    } else {
+        // Align and then add
+        let scoring = GapAffine2Piece::new(mismatch_score, gap_extend1, gap_open1, gap_extend2, gap_open2);
+        
+        // Always use Global alignment
+        let aln_type = AlignmentType::Global;
+
+        let aligner = PoastaAligner::new(Affine2PieceMinGapCost(scoring), aln_type);
+        
+        let result = aligner.align::<u32, _>(graph_inner, seq_slice);
+        
+        match graph_inner.add_alignment_with_weights(&seq_name, seq_slice, Some(&result.alignment), &weights) {
+            Ok(_) => 0,
+            Err(_) => -3,
+        }
+    }
+}
+
+/// Adds a sequence to the graph with a specified weight using two-piece affine gap model (Global alignment).
+/// The weight applies to the entire sequence, meaning all bases will have the same weight.
+/// This uses two different gap penalty pairs, choosing the cheaper option for each gap.
+/// This is useful when many identical sequences exist - instead of adding them multiple times,
+/// you can add once with a weight representing the count.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn poasta_add_sequence_2piece_with_weight(
+    graph: *mut PoastaGraph,
+    seq: *const c_char,
+    len: usize,
+    weight: u32,
+    mismatch_score: u8,
+    gap_extend1: u8,
+    gap_open1: u8,
+    gap_extend2: u8,
+    gap_open2: u8,
+) -> c_int {
+    if graph.is_null() || seq.is_null() {
+        return -1;
+    }
+
+    let graph_inner = unsafe { &mut (*graph).0 };
+    let seq_slice = unsafe { slice::from_raw_parts(seq as *const u8, len) };
+    
+    // Create a dummy name for the sequence (e.g. "seq_N")
+    let seq_name = format!("seq_{}", graph_inner.sequences.len());
+    // Use the provided weight for all bases in the sequence
+    let weights = vec![weight as usize; len];
+
+    if graph_inner.is_empty() {
+        // First sequence, just add it
+        match graph_inner.add_alignment_with_weights(&seq_name, seq_slice, None, &weights) {
+            Ok(_) => 0,
+            Err(_) => -2,
+        }
+    } else {
+        // Align and then add
+        let scoring = GapAffine2Piece::new(mismatch_score, gap_extend1, gap_open1, gap_extend2, gap_open2);
+        
+        // Always use Global alignment
+        let aln_type = AlignmentType::Global;
+
+        let aligner = PoastaAligner::new(Affine2PieceMinGapCost(scoring), aln_type);
         
         let result = aligner.align::<u32, _>(graph_inner, seq_slice);
         

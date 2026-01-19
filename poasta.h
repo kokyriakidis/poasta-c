@@ -26,8 +26,8 @@ int poasta_add_sequence(PoastaGraph *graph,
                         const char *seq,
                         uintptr_t len,
                         uint8_t mismatch_score,
-                        uint8_t gap_open,
-                        uint8_t gap_extend);
+                        uint8_t gap_extend,
+                        uint8_t gap_open);
 
 /// Adds a sequence to the graph with a specified weight (Global alignment).
 /// The weight applies to the entire sequence, meaning all bases will have the same weight.
@@ -38,8 +38,35 @@ int poasta_add_sequence_with_weight(PoastaGraph *graph,
                                     uintptr_t len,
                                     uint32_t weight,
                                     uint8_t mismatch_score,
-                                    uint8_t gap_open,
-                                    uint8_t gap_extend);
+                                    uint8_t gap_extend,
+                                    uint8_t gap_open);
+
+/// Adds a sequence to the graph using two-piece affine gap model (Global alignment).
+/// This uses two different gap penalty pairs, choosing the cheaper option for each gap.
+/// Useful for better modeling of short vs long gaps.
+int poasta_add_sequence_2piece(PoastaGraph *graph,
+                               const char *seq,
+                               uintptr_t len,
+                               uint8_t mismatch_score,
+                               uint8_t gap_extend1,
+                               uint8_t gap_open1,
+                               uint8_t gap_extend2,
+                               uint8_t gap_open2);
+
+/// Adds a sequence to the graph with a specified weight using two-piece affine gap model (Global alignment).
+/// The weight applies to the entire sequence, meaning all bases will have the same weight.
+/// This uses two different gap penalty pairs, choosing the cheaper option for each gap.
+/// This is useful when many identical sequences exist - instead of adding them multiple times,
+/// you can add once with a weight representing the count.
+int poasta_add_sequence_2piece_with_weight(PoastaGraph *graph,
+                                           const char *seq,
+                                           uintptr_t len,
+                                           uint32_t weight,
+                                           uint8_t mismatch_score,
+                                           uint8_t gap_extend1,
+                                           uint8_t gap_open1,
+                                           uint8_t gap_extend2,
+                                           uint8_t gap_open2);
 
 /// Generates the MSA from the graph.
 /// Returns a PoastaMsa struct. Caller must free it with poasta_free_msa.
